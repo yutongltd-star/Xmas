@@ -1,0 +1,876 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Calendar, 
+  MapPin, 
+  CheckSquare, 
+  Utensils, 
+  CloudSun, 
+  Moon, 
+  Sun, 
+  CloudRain, 
+  Coffee, 
+  ShoppingBag, 
+  Camera, 
+  Music,
+  Wine,
+  Ship,
+  ChevronDown,
+  ChevronUp,
+  Snowflake,
+  Gift,
+  Plus,
+  Trash2,
+  Edit3,
+  Save,
+  X,
+  Plane,
+  ExternalLink,
+  MinusCircle,
+  PlusCircle
+} from 'lucide-react';
+
+// --- 初始資料 (若無存檔時使用) ---
+
+const initialTripDetails = {
+  title: "Tokyo Xmas & New Year 2025",
+  startDate: "2025-12-24",
+  endDate: "2026-01-01",
+};
+
+// 原始預設天氣 (12/24 - 12/31)
+const initialWeatherForecast = [
+  { date: "12/24", temp: "3° / 11°", icon: "Sun", status: "晴時多雲", note: "乾冷" },
+  { date: "12/25", temp: "2° / 10°", icon: "Sun", status: "晴朗", note: "迪士尼好天氣" },
+  { date: "12/26", temp: "2° / 9°", icon: "CloudSun", status: "多雲", note: "海風大" },
+  { date: "12/27", temp: "3° / 11°", icon: "Sun", status: "晴朗", note: "適合逛街" },
+  { date: "12/28", temp: "1° / 10°", icon: "Sun", status: "晴朗", note: "川越風大" },
+  { date: "12/29", temp: "2° / 11°", icon: "CloudRain", status: "偶雨", note: "帶傘備用" },
+  { date: "12/30", temp: "3° / 12°", icon: "CloudSun", status: "多雲轉晴", note: "舒適" },
+  { date: "12/31", temp: "1° / 8°", icon: "Moon", status: "晴朗", note: "跨年夜寒冷" },
+];
+
+const initialItineraryData = [
+  {
+    date: "2025/12/24 (三)",
+    title: "抵達 & 聖誕晚餐",
+    events: [
+      { time: "09:10", title: "松山機場出發", icon: "Plane", note: "準備飛往東京", mapQuery: "台北松山機場" },
+      { time: "13:00", title: "抵達羽田機場", icon: "MapPin", note: "前往市區", mapQuery: "羽田機場" },
+      { time: "下午", title: "澀谷周邊", icon: "ShoppingBag", note: "澀谷觀景台、幸福鬆餅、逛街", mapQuery: "Shibuya Sky" },
+      { time: "17:45", title: "屋形船集合", icon: "Ship", note: "釣新集合點 (已付款)", mapQuery: "釣新 屋形船" },
+      { time: "18:00", title: "釣新屋形船晚餐", icon: "Utensils", note: "豪華晚餐體驗", mapQuery: "釣新 屋形船" },
+      { time: "晚上", title: "入住日航舞濱飯店", icon: "Moon", note: "準備明天迪士尼", mapQuery: "Grand Nikko Tokyo Bay Maihama" }
+    ]
+  },
+  {
+    date: "2025/12/25 (四)",
+    title: "迪士尼陸地 (Land)",
+    events: [
+      { time: "全天", title: "Tokyo Disneyland", icon: "Music", note: "聖誕節快樂！盡情玩樂", mapQuery: "Tokyo Disneyland" },
+      { time: "晚上", title: "續住日航舞濱飯店", icon: "Moon", note: "", mapQuery: "Grand Nikko Tokyo Bay Maihama" }
+    ]
+  },
+  {
+    date: "2025/12/26 (五)",
+    title: "迪士尼海洋 (Sea) & 移動",
+    events: [
+      { time: "全天", title: "Tokyo DisneySea", icon: "Ship", note: "感受海洋魅力", mapQuery: "Tokyo DisneySea" },
+      { time: "傍晚", title: "前往市區 Check-in", icon: "MapPin", note: "Sotetsu Grand Fresa Takadanobaba", mapQuery: "Sotetsu Grand Fresa Takadanobaba" },
+      { time: "晚上", title: "新宿採買 & 酒吧", icon: "Wine", note: "Maruetsu 超市、Bar B&F (營業至3點)", mapQuery: "Bar B&F Tokyo" }
+    ]
+  },
+  {
+    date: "2025/12/27 (六)",
+    title: "豐洲市場 & 銀座",
+    events: [
+      { time: "上午", title: "豐洲市場", icon: "Utensils", note: "吃生魚片 (店名：晶)", mapQuery: "豐洲市場 晶" },
+      { time: "下午", title: "銀座逛街", icon: "ShoppingBag", note: "IMADEYA GINZA(清酒)、塩麵包屋、幸福鬆餅", mapQuery: "Ginza" },
+      { time: "晚餐", title: "梅林豬排", icon: "Utensils", note: "無法訂位需排隊", mapQuery: "銀座梅林 本店" },
+      { time: "20:00", title: "FOLKLORE 酒吧", icon: "Wine", note: "已訂位 20:00", mapQuery: "FOLKLORE Mixology Heritage Tokyo" }
+    ]
+  },
+  {
+    date: "2025/12/28 (日)",
+    title: "川越小江戶 & 新宿",
+    events: [
+      { time: "09:30", title: "梨花和服 川越店", icon: "Camera", note: "換和服", mapQuery: "梨花和服 川越店" },
+      { time: "11:00", title: "冰川神社拍攝", icon: "Camera", note: "集合拍照", mapQuery: "川越冰川神社" },
+      { time: "午餐", title: "川越老街", icon: "Utensils", note: "小川菊鰻魚飯 (先抽號碼牌)、菓子屋横丁", mapQuery: "小川菊鰻魚飯" },
+      { time: "下午", title: "新宿逛街", icon: "ShoppingBag", note: "買清酒 (Linksas)、Francfranc", mapQuery: "Shinjuku" },
+      { time: "晚餐", title: "新宿覓食", icon: "Utensils", note: "牛舌荒 或 楢製麵", mapQuery: "牛舌荒 新宿" },
+      { time: "晚上", title: "SAKE MARKET", icon: "Wine", note: "清酒喝到飽", mapQuery: "KURAND SAKE MARKET Shinjuku" }
+    ]
+  },
+  {
+    date: "2025/12/29 (一)",
+    title: "貓咪列車 & 三軒茶屋",
+    events: [
+      { time: "上午", title: "豪德寺", icon: "Camera", note: "搭招福貓電車 (查時刻表)", mapQuery: "豪德寺" },
+      { time: "午餐", title: "三軒茶屋", icon: "Utensils", note: "阿夫利 或 食堂かど", mapQuery: "三軒茶屋" },
+      { time: "下午", title: "甜點巡禮", icon: "Coffee", note: "PARK STORE 甜甜圈", mapQuery: "PARK STORE Tokyo" }
+    ]
+  }
+];
+
+const initialWishList = {
+  "新宿": [
+    { name: "Tonkatsu Hinata (豬排飯)", checked: false },
+    { name: "牛舌荒", checked: false },
+    { name: "提燈燒鳥 (Shinjuku no kemuri)", checked: false },
+    { name: "伊吹壽喜燒 (需預約)", checked: false },
+    { name: "楢製麵 (拉麵)", checked: false },
+    { name: "Bar B&F", checked: false }
+  ],
+  "澀谷/代官山": [
+    { name: "Nata de Cristiano (蛋塔)", checked: false },
+    { name: "京都 茶寮翠泉", checked: false },
+    { name: "Chez Lui (可麗露)", checked: false },
+    { name: "Hillside Pantry (麵包)", checked: false },
+    { name: "GARDEN HOUSE CRAFTS", checked: false }
+  ],
+  "銀座": [
+    { name: "Bar High Five", checked: false },
+    { name: "佐藤養助 (沾麵)", checked: false },
+    { name: "The CHOYA 銀座 BAR", checked: false },
+    { name: "Mixology Salon", checked: false },
+    { name: "篝拉麵", checked: false },
+    { name: "FOUNDRY (水果蛋糕)", checked: false }
+  ],
+  "表參道/六本木": [
+    { name: "Dolce Tacubo (費南雪/布丁)", checked: false },
+    { name: "House of Herme (小嵨陽菜)", checked: false },
+    { name: "LA BASE (巧克力)", checked: false }
+  ]
+};
+
+const hotelFood = [
+  { type: "居酒屋", name: "さかえや 高田馬場店", feat: "雞料理、熱鬧", time: "~23:00" },
+  { type: "居酒屋", name: "鶴亀八番 高田馬場店", feat: "平價串燒", time: "~23:30" },
+  { type: "居酒屋", name: "酒場 火麒麟", feat: "平價、續攤好選擇", time: "~00:00" },
+  { type: "拉麵", name: "鶏白湯麺 蔭山", feat: "濃郁雞白湯", time: "~22:30" },
+  { type: "拉麵", name: "末廣ラーメン本舗", feat: "宵夜拉麵首選", time: "~03:00" },
+  { type: "中華", name: "石庫門", feat: "中華料理", time: "~22:30" },
+];
+
+// --- 組件 ---
+
+const Snowfall = () => {
+  const snowflakes = Array.from({ length: 20 });
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      {snowflakes.map((_, i) => (
+        <div
+          key={i}
+          className="absolute text-white/40 animate-fall"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `-${Math.random() * 20}%`,
+            animationDuration: `${Math.random() * 5 + 5}s`,
+            animationDelay: `${Math.random() * 5}s`,
+            fontSize: `${Math.random() * 10 + 10}px`,
+          }}
+        >
+          ❄
+        </div>
+      ))}
+      <style jsx>{`
+        @keyframes fall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.8; }
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+        .animate-fall {
+          animation-name: fall;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const WeatherCard = ({ data }) => {
+  const getIcon = (iconName) => {
+    switch (iconName) {
+      case 'Sun': return <Sun className="w-5 h-5 text-[#C59F9F]" />; 
+      case 'CloudSun': return <CloudSun className="w-5 h-5 text-[#8DA399]" />; 
+      case 'CloudRain': return <CloudRain className="w-5 h-5 text-[#7E93A2]" />; 
+      case 'Moon': return <Moon className="w-5 h-5 text-[#7E93A2]" />; 
+      default: return <Sun className="w-5 h-5 text-[#C59F9F]" />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center p-3 bg-white/40 backdrop-blur-md rounded-xl border border-white/40 min-w-[90px] mx-1 shadow-sm shrink-0">
+      <span className="text-xs font-medium text-slate-600 font-serif">{data.date}</span>
+      <div className="my-2 opacity-80">{getIcon(data.icon)}</div>
+      <span className="text-sm font-bold text-slate-700">{data.temp}</span>
+      <span className="text-[10px] text-slate-500 mt-1">{data.note}</span>
+    </div>
+  );
+};
+
+const Countdown = () => {
+  const [timeLeft, setTimeLeft] = useState({});
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const difference = +new Date("2025-12-24") - +new Date();
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="text-center py-6 relative">
+      <div className="flex items-center justify-center gap-2 mb-3">
+         <Snowflake size={16} className="text-[#8DA399]" />
+         <h2 className="text-[#7E93A2] text-xs tracking-[0.2em] uppercase font-serif">Christmas Countdown</h2>
+         <Snowflake size={16} className="text-[#8DA399]" />
+      </div>
+      
+      <div className="flex justify-center gap-3 text-slate-700">
+        {[
+          { label: 'DAYS', value: timeLeft.days || 0 },
+          { label: 'HRS', value: timeLeft.hours || 0 },
+          { label: 'MINS', value: timeLeft.minutes || 0 }
+        ].map((item, idx) => (
+          <div key={idx} className="flex flex-col items-center">
+            <div className="bg-white/60 w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border border-white/50 backdrop-blur-sm">
+              <span className="text-2xl font-serif font-bold text-[#9D5C63]">{item.value}</span>
+            </div>
+            <span className="text-[10px] text-slate-500 mt-2 font-medium tracking-wider">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Modal Component for Adding Events
+const AddEventModal = ({ isOpen, onClose, onSave, dateTitle }) => {
+  const [formData, setFormData] = useState({ time: '', title: '', note: '', icon: 'MapPin', mapQuery: '' });
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <div className="bg-[#F0F2F5] w-full max-w-sm rounded-2xl p-6 shadow-xl border border-white/50">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-[#7E93A2]">Add Event</h3>
+          <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">For: {dateTitle}</p>
+        
+        <div className="space-y-3">
+          <div className="flex gap-2">
+             <div className="w-1/3">
+              <label className="text-xs font-bold text-slate-500 uppercase">Time</label>
+              <input 
+                type="text" 
+                placeholder="14:00" 
+                className="w-full mt-1 p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8DA399] text-slate-700"
+                value={formData.time}
+                onChange={(e) => setFormData({...formData, time: e.target.value})}
+              />
+             </div>
+             <div className="w-2/3">
+              <label className="text-xs font-bold text-slate-500 uppercase">Icon</label>
+              <select 
+                className="w-full mt-1 p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8DA399] text-slate-700"
+                value={formData.icon}
+                onChange={(e) => setFormData({...formData, icon: e.target.value})}
+              >
+                <option value="MapPin">📍 Location</option>
+                <option value="Utensils">🍴 Food</option>
+                <option value="ShoppingBag">🛍️ Shop</option>
+                <option value="Wine">🍷 Bar</option>
+                <option value="Camera">📷 Photo</option>
+                <option value="Ship">🛳️ Ship</option>
+                <option value="Plane">✈️ Plane</option>
+                <option value="Music">🎵 Fun</option>
+              </select>
+             </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase">Title</label>
+            <input 
+              type="text" 
+              placeholder="Event name" 
+              className="w-full mt-1 p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8DA399] text-slate-700"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase">Map Query (Optional)</label>
+            <input 
+              type="text" 
+              placeholder="Search term for Google Maps" 
+              className="w-full mt-1 p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8DA399] text-slate-700"
+              value={formData.mapQuery}
+              onChange={(e) => setFormData({...formData, mapQuery: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase">Note</label>
+            <input 
+              type="text" 
+              placeholder="Short description" 
+              className="w-full mt-1 p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8DA399] text-slate-700"
+              value={formData.note}
+              onChange={(e) => setFormData({...formData, note: e.target.value})}
+            />
+          </div>
+        </div>
+
+        <button 
+          onClick={() => {
+            if(formData.title) {
+              onSave(formData);
+              setFormData({ time: '', title: '', note: '', icon: 'MapPin', mapQuery: '' }); // Reset
+              onClose();
+            }
+          }}
+          className="w-full mt-6 bg-[#8DA399] text-white font-bold py-3 rounded-xl shadow-md hover:bg-[#7A9086] transition-colors"
+        >
+          Save Event
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  // State Initialization
+  const [activeTab, setActiveTab] = useState('itinerary');
+  const [openDay, setOpenDay] = useState(0);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+
+  // Load state from localStorage or fallback to initial data
+  const [itinerary, setItinerary] = useState(() => {
+    const saved = localStorage.getItem('tokyo_trip_itinerary');
+    return saved ? JSON.parse(saved) : initialItineraryData;
+  });
+
+  const [wishes, setWishes] = useState(() => {
+    const saved = localStorage.getItem('tokyo_trip_wishes');
+    return saved ? JSON.parse(saved) : initialWishList;
+  });
+
+  // Weather State
+  const [weather, setWeather] = useState(() => {
+    const saved = localStorage.getItem('tokyo_trip_weather');
+    return saved ? JSON.parse(saved) : initialWeatherForecast;
+  });
+
+  // Persist to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('tokyo_trip_itinerary', JSON.stringify(itinerary));
+  }, [itinerary]);
+
+  useEffect(() => {
+    localStorage.setItem('tokyo_trip_wishes', JSON.stringify(wishes));
+  }, [wishes]);
+
+  useEffect(() => {
+    localStorage.setItem('tokyo_trip_weather', JSON.stringify(weather));
+  }, [weather]);
+
+  // Handlers
+  const toggleWish = (area, index) => {
+    const newWishes = { ...wishes };
+    newWishes[area][index].checked = !newWishes[area][index].checked;
+    setWishes(newWishes);
+  };
+
+  const handleAddWish = (area, name) => {
+    if (!name.trim()) return;
+    const newWishes = { ...wishes };
+    newWishes[area].push({ name, checked: false });
+    setWishes(newWishes);
+  };
+
+  const handleDeleteWish = (area, index) => {
+    if(!window.confirm("Delete this wish?")) return;
+    const newWishes = { ...wishes };
+    newWishes[area].splice(index, 1);
+    setWishes(newWishes);
+  };
+
+  const handleAddEvent = (eventData) => {
+    const newItinerary = [...itinerary];
+    newItinerary[selectedDayIndex].events.push(eventData);
+    setItinerary(newItinerary);
+  };
+
+  const handleDeleteEvent = (dayIdx, eventIdx) => {
+    if(!window.confirm("Delete this event?")) return;
+    const newItinerary = [...itinerary];
+    newItinerary[dayIdx].events.splice(eventIdx, 1);
+    setItinerary(newItinerary);
+  };
+
+  // Helper to generate random weather for new days
+  const generateWeatherForDate = (dateStr) => {
+    const statuses = [
+      { status: "晴朗", icon: "Sun", note: "陽光充足" },
+      { status: "多雲", icon: "CloudSun", note: "舒適" },
+      { status: "晴時多雲", icon: "Sun", note: "微風" },
+      { status: "偶雨", icon: "CloudRain", note: "記得帶傘" }
+    ];
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+    const low = Math.floor(Math.random() * 3); // 0-2
+    const high = Math.floor(Math.random() * 5) + 8; // 8-12
+    
+    // Extract MM/DD from "2025/12/31 (三)" or "2026/01/01 (四)"
+    const datePart = dateStr.split(' ')[0]; // 2025/12/31
+    const parts = datePart.split('/');
+    const formattedDate = `${parts[1]}/${parts[2]}`; // 12/31
+
+    return {
+      date: formattedDate,
+      temp: `${low}° / ${high}°`,
+      icon: randomStatus.icon,
+      status: randomStatus.status,
+      note: randomStatus.note
+    };
+  };
+
+  // New Handlers for Day Management with Weather Sync
+  const handleAddDay = () => {
+    const lastDay = itinerary[itinerary.length - 1];
+    // Robustly handle date string "2025/12/31 (三)"
+    const lastDateStr = lastDay.date.split(' ')[0]; 
+    const dateObj = new Date(lastDateStr.replace(/\//g, '-'));
+    
+    // Add 1 day
+    dateObj.setDate(dateObj.getDate() + 1);
+
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const weekDayMap = ['日', '一', '二', '三', '四', '五', '六'];
+    const weekDay = weekDayMap[dateObj.getDay()];
+
+    const newDateStr = `${year}/${month}/${day} (${weekDay})`;
+
+    const newDay = {
+      date: newDateStr,
+      title: "自由安排",
+      events: []
+    };
+
+    setItinerary([...itinerary, newDay]);
+    setOpenDay(itinerary.length);
+
+    // Sync Weather: Add weather if it doesn't exist for this new date
+    const formattedDate = `${month}/${day}`;
+    const weatherExists = weather.some(w => w.date === formattedDate);
+    
+    if (!weatherExists) {
+      const newWeather = generateWeatherForDate(newDateStr);
+      setWeather([...weather, newWeather]);
+    }
+  };
+
+  const handleRemoveDay = () => {
+    if (itinerary.length <= 1) {
+      alert("At least one day is required!");
+      return;
+    }
+    if (!window.confirm("Are you sure you want to remove the last day of the trip?")) return;
+    
+    const newItinerary = [...itinerary];
+    newItinerary.pop();
+    setItinerary(newItinerary);
+
+    // Adjust open day if needed
+    if (openDay >= newItinerary.length) {
+      setOpenDay(newItinerary.length - 1);
+    }
+
+    // Sync Weather: Remove the last weather entry ONLY if it was dynamically added
+    // Match the number of days in itinerary plus maybe any difference if user manually added lots of days
+    // Simple logic: If weather list is longer than initial static list (8), remove last one.
+    if (weather.length > 8) {
+      const newWeather = [...weather];
+      newWeather.pop();
+      setWeather(newWeather);
+    }
+  };
+
+  const handleEditDayTitle = (idx, newTitle) => {
+    const newItinerary = [...itinerary];
+    newItinerary[idx].title = newTitle;
+    setItinerary(newItinerary);
+  };
+
+  // Helper to get Google Maps Link
+  const getMapLink = (query) => {
+    if (!query) return 'https://www.google.com/maps';
+    if (query.startsWith('http')) return query;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query + ' 東京')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#E3E8E9] via-[#CED9E0] to-[#BCCAD6] text-slate-700 font-sans pb-20 selection:bg-[#C59F9F] selection:text-white">
+      <Snowfall />
+
+      {/* Header Area */}
+      <div className="relative z-10 bg-white/30 backdrop-blur-md border-b border-white/20 pb-4 shadow-sm">
+        <div className="max-w-md mx-auto px-4 pt-4">
+          {/* Edit Toggle */}
+          <div className="flex justify-end mb-2">
+            <button 
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all ${
+                isEditMode 
+                  ? 'bg-[#9D5C63] text-white shadow-md' 
+                  : 'bg-white/50 text-slate-500 hover:bg-white'
+              }`}
+            >
+              {isEditMode ? <><Save size={12}/> Done</> : <><Edit3 size={12}/> Edit</>}
+            </button>
+          </div>
+
+          <h1 className="text-3xl font-serif font-bold text-center mb-1 text-slate-700 tracking-wide mt-2">
+            Tokyo <span className="text-[#9D5C63]">2025</span>
+          </h1>
+          <p className="text-center text-slate-500 text-xs tracking-widest uppercase mb-4 flex items-center justify-center gap-2">
+            <span className="w-8 h-[1px] bg-slate-400"></span>
+            Winter Holiday
+            <span className="w-8 h-[1px] bg-slate-400"></span>
+          </p>
+          
+          <Countdown />
+
+          {/* Weather Widget Scroll */}
+          <div className="mt-6">
+            <div className="flex overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 items-center">
+              {weather.map((w, idx) => (
+                <WeatherCard key={idx} data={w} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="relative z-10 max-w-md mx-auto p-4 space-y-6">
+        
+        {/* Navigation Tabs */}
+        <div className="flex p-1.5 bg-white/40 backdrop-blur-md rounded-2xl mb-6 shadow-sm border border-white/30">
+          {[
+            { id: 'itinerary', label: '旅程', icon: Calendar },
+            { id: 'wishlist', label: '願望', icon: Gift },
+            { id: 'hotel', label: '深夜', icon: Moon },
+          ].map(tab => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
+                activeTab === tab.id 
+                  ? 'bg-[#8DA399] text-white shadow-md' 
+                  : 'text-slate-500 hover:bg-white/30'
+              }`}
+            >
+              <tab.icon size={14} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Itinerary View */}
+        {activeTab === 'itinerary' && (
+          <div className="space-y-4">
+            {itinerary.map((day, idx) => (
+              <div key={idx} className="bg-white/50 border border-white/60 rounded-2xl overflow-hidden backdrop-blur-md shadow-sm transition-all hover:shadow-md">
+                <button 
+                  onClick={() => setOpenDay(openDay === idx ? null : idx)}
+                  className="w-full flex items-center justify-between p-4 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[#F4F1EA] text-[#9D5C63]">
+                        <span className="text-[10px] font-bold uppercase">{day.date.split(' ')[0].split('/')[2]}</span>
+                        <span className="text-[10px] opacity-70">DEC/JAN</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">{day.date.split(' ')[1]}</div>
+                      
+                      {/* Title Editable in Edit Mode */}
+                      {isEditMode ? (
+                        <input 
+                          type="text" 
+                          value={day.title}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleEditDayTitle(idx, e.target.value)}
+                          className="w-full bg-white/50 border-b border-slate-300 focus:outline-none focus:border-[#9D5C63] text-base font-bold text-slate-700 font-serif px-1 rounded-sm"
+                        />
+                      ) : (
+                        <div className="text-base font-bold text-slate-700 font-serif">{day.title}</div>
+                      )}
+                    </div>
+                  </div>
+                  {openDay === idx ? <ChevronUp className="text-[#8DA399]" /> : <ChevronDown className="text-slate-400" />}
+                </button>
+                
+                {openDay === idx && (
+                  <div className="px-4 pb-6 pt-2">
+                    <div className="relative pl-6 space-y-8 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-300 before:border-l before:border-dashed before:border-slate-300">
+                      {day.events.length === 0 && (
+                        <div className="text-xs text-slate-400 italic py-2">No events yet.</div>
+                      )}
+                      
+                      {day.events.map((event, eIdx) => (
+                        <div key={eIdx} className="relative group">
+                          {/* Dot on timeline */}
+                          <div className={`absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-[#F0F2F5] ${eIdx % 2 === 0 ? 'bg-[#9D5C63]' : 'bg-[#8DA399]'}`} />
+                          
+                          <div className="flex items-start justify-between bg-white/40 p-3 rounded-xl border border-white/40">
+                            <div className="flex-1">
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-[#E6Dccd] text-[#7E6E5D] mb-1.5">
+                                {event.time}
+                              </span>
+                              <h4 className="font-bold text-slate-700 text-sm mb-1">{event.title}</h4>
+                              {event.note && (
+                                <p className="text-xs text-slate-500 leading-relaxed">{event.note}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="text-[#7E93A2] opacity-70 bg-white/50 p-2 rounded-full">
+                                {event.icon === 'MapPin' && <MapPin size={16} />}
+                                {event.icon === 'ShoppingBag' && <ShoppingBag size={16} />}
+                                {event.icon === 'Utensils' && <Utensils size={16} />}
+                                {event.icon === 'Ship' && <Ship size={16} />}
+                                {event.icon === 'Wine' && <Wine size={16} />}
+                                {event.icon === 'Camera' && <Camera size={16} />}
+                                {event.icon === 'Music' && <Music size={16} />}
+                                {event.icon === 'Plane' && <Plane size={16} />}
+                                {!['MapPin','ShoppingBag','Utensils','Ship','Wine','Camera','Music', 'Plane'].includes(event.icon) && <MapPin size={16}/>}
+                              </div>
+
+                              {/* Google Map Link for Itinerary */}
+                              <a 
+                                href={getMapLink(event.mapQuery || event.title)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 text-[#7E93A2] hover:text-[#8DA399] hover:bg-white/50 rounded-full transition-colors"
+                              >
+                                <ExternalLink size={14} />
+                              </a>
+
+                              {/* Delete Button (Only in Edit Mode) */}
+                              {isEditMode && (
+                                <button 
+                                  onClick={() => handleDeleteEvent(idx, eIdx)}
+                                  className="p-1.5 bg-red-100 rounded-full text-red-500 hover:bg-red-200 transition-colors"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add Event Button (Only in Edit Mode) */}
+                      {isEditMode && (
+                         <div className="relative">
+                           <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-300 ring-4 ring-[#F0F2F5]" />
+                           <button 
+                            onClick={() => {
+                              setSelectedDayIndex(idx);
+                              setModalOpen(true);
+                            }}
+                            className="w-full border-2 border-dashed border-slate-300 rounded-xl p-3 text-slate-400 text-xs font-bold hover:border-[#8DA399] hover:text-[#8DA399] transition-all flex items-center justify-center gap-2"
+                           >
+                             <Plus size={14} /> Add Event
+                           </button>
+                         </div>
+                      )}
+
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Day Management Buttons (Only in Edit Mode) */}
+            {isEditMode && (
+              <div className="flex gap-4 mt-8 px-2 pb-8">
+                 <button 
+                  onClick={handleRemoveDay}
+                  className="flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-red-200 bg-red-50 text-red-400 hover:bg-red-100 font-bold transition-all shadow-sm"
+                 >
+                   <MinusCircle size={20} /> Remove Day
+                 </button>
+                 <button 
+                  onClick={handleAddDay}
+                  className="flex-[2] flex items-center justify-center gap-2 p-4 rounded-xl bg-[#8DA399] text-white hover:bg-[#7A9086] font-bold transition-all shadow-md"
+                 >
+                   <PlusCircle size={20} /> Add New Day
+                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Wishlist View */}
+        {activeTab === 'wishlist' && (
+          <div className="grid gap-4">
+            {Object.entries(wishes).map(([area, items], idx) => (
+              <div key={idx} className="bg-white/50 rounded-2xl p-5 border border-white/60 shadow-sm backdrop-blur-md">
+                <h3 className="text-base font-bold text-[#7E93A2] mb-4 flex items-center gap-2 border-b border-slate-200 pb-2 font-serif">
+                  <MapPin size={16} /> {area}
+                </h3>
+                <div className="space-y-2.5">
+                  {items.map((item, itemIdx) => (
+                    <div 
+                      key={itemIdx}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/40 hover:bg-white/60 transition-all border border-transparent hover:border-white/50 group"
+                    >
+                      <div 
+                        onClick={() => toggleWish(area, itemIdx)}
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-300 cursor-pointer ${
+                        item.checked 
+                          ? 'bg-[#8DA399] border-[#8DA399]' // Sage Green
+                          : 'border-slate-300 bg-white group-hover:border-[#8DA399]'
+                      }`}>
+                        {item.checked && <CheckSquare size={14} className="text-white" />}
+                      </div>
+                      
+                      <span 
+                        onClick={() => toggleWish(area, itemIdx)}
+                        className={`flex-1 text-sm font-medium cursor-pointer ${item.checked ? 'text-slate-400 line-through' : 'text-slate-600'}`}
+                      >
+                        {item.name}
+                      </span>
+
+                      {/* Google Maps Link */}
+                      <a 
+                        href={getMapLink(item.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()} 
+                        className="p-1.5 text-[#7E93A2] hover:text-[#8DA399] hover:bg-white/50 rounded-full transition-colors"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                      
+                      {/* Delete Wish Button */}
+                      {isEditMode && (
+                        <button 
+                          onClick={() => handleDeleteWish(area, itemIdx)}
+                          className="text-slate-400 hover:text-red-500 p-1"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Add Wish Input */}
+                  {isEditMode && (
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-slate-200/50">
+                      <input 
+                        type="text" 
+                        placeholder="Add new wish..."
+                        className="flex-1 bg-white/60 rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#8DA399]"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddWish(area, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                      <button className="bg-[#8DA399] text-white p-2 rounded-lg hover:bg-[#7A9086]">
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hotel/Food View */}
+        {activeTab === 'hotel' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-[#7E93A2] to-[#607485] rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+              <Snowflake className="absolute top-2 right-2 text-white/10 w-24 h-24 rotate-12" />
+              <h3 className="text-xs text-blue-100 uppercase tracking-wider mb-2 font-medium">Current Hotel</h3>
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                   <MapPin size={24} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-xl font-serif mb-1">Sotetsu Grand Fresa</h2>
+                  <p className="text-sm text-blue-100 opacity-90">Takadanobaba (高田馬場)</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2 font-serif">
+                <Moon size={18} className="text-[#9D5C63]" /> 深夜覓食 (Late Night)
+              </h3>
+              <div className="grid gap-3">
+                {hotelFood.map((food, idx) => (
+                  <div key={idx} className="bg-white/60 p-4 rounded-xl border border-white/60 shadow-sm flex justify-between items-start hover:bg-white/80 transition-colors">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E3E8E9] text-[#7E93A2]">
+                          {food.type}
+                        </span>
+                        <h4 className="font-bold text-slate-700">{food.name}</h4>
+                      </div>
+                      <p className="text-xs text-slate-500 pl-1">{food.feat}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                       <p className="text-[10px] font-bold text-[#8DA399] bg-[#8DA399]/10 px-2 py-1 rounded-lg">
+                        {food.time}
+                      </p>
+                      {/* Also adding map link here as a bonus since it's easy and useful */}
+                      <a 
+                        href={getMapLink(food.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#7E93A2] hover:text-[#8DA399] transition-colors"
+                      >
+                         <ExternalLink size={14} />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+      
+      {/* Modal Injection */}
+      <AddEventModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)}
+        onSave={handleAddEvent}
+        dateTitle={selectedDayIndex !== null ? itinerary[selectedDayIndex].date : ''}
+      />
+
+      {/* Footer */}
+      <footer className="text-center py-8 text-slate-400 text-[10px] tracking-widest uppercase">
+        <p>Merry Christmas & Happy New Year</p>
+      </footer>
+    </div>
+  );
+}
